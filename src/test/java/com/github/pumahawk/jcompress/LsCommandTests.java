@@ -13,6 +13,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -24,8 +25,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Scope;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
@@ -33,9 +38,7 @@ import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
 import picocli.CommandLine;
 
 @ExtendWith(SpringExtension.class)
-@Import({
-	LsCommand.class,
-})
+@Import(LsCommandTests.Conf.class)
 @MockBean({
 	IOService.class,
 })
@@ -46,7 +49,9 @@ public class LsCommandTests {
 	private IOService ioService;
 	
 	@Autowired
-	private LsCommand listArchiveAction;
+	private ApplicationContext ac;
+	
+	private Supplier<LsCommand> listArchiveAction = () -> ac.getBean(LsCommand.class);
 	
 	@Test
 	public void loadContext() {
@@ -59,7 +64,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(archive.toString());
+		new CommandLine(listArchiveAction.get()).execute(archive.toString());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -77,7 +82,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(archive1.toString(), archive2.toString());
+		new CommandLine(listArchiveAction.get()).execute(archive1.toString(), archive2.toString());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -97,7 +102,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute("--file-name", archive1.toString(), archive2.toString());
+		new CommandLine(listArchiveAction.get()).execute("--file-name", archive1.toString(), archive2.toString());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals(archive1.toString() + ":message.txt", sc.nextLine());
@@ -115,7 +120,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(
+		new CommandLine(listArchiveAction.get()).execute(
 				"--grep", ".*2.*",
 				archive.toString()
 			);
@@ -133,7 +138,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(
+		new CommandLine(listArchiveAction.get()).execute(
 				"--rewrite", "2:1",
 				archive.toString()
 			);
@@ -152,7 +157,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(
+		new CommandLine(listArchiveAction.get()).execute(
 				archive.toString()
 			);
 
@@ -170,7 +175,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute(
+		new CommandLine(listArchiveAction.get()).execute(
 				"--type", "stream",
 				archive.toString()
 			);
@@ -196,9 +201,17 @@ public class LsCommandTests {
 	@ParameterizedTest
 	@MethodSource
 	public void processRegexInputTests(String regex, String v1, String v2) {
-		var r = listArchiveAction.rexKey(regex);
+		var r = listArchiveAction.get().rexKey(regex);
 		assertEquals(v1, r[0]);
 		assertEquals(v2, r[1]);
 	}
 
+	@Configuration
+	public static class Conf {
+		@Bean
+		@Scope("prototype")
+		public LsCommand lsCommand() {
+			return new LsCommand();
+		}
+	}
 }
