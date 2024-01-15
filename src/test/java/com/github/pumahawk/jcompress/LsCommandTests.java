@@ -77,7 +77,7 @@ public class LsCommandTests {
 
 		new CommandLine(listArchiveAction).execute(
 				"-f", archive.toString(),
-				"--match", ".*2.*"
+				"--grep", ".*2.*"
 			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));

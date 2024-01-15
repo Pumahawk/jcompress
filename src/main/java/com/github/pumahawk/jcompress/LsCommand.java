@@ -27,7 +27,7 @@ public class LsCommand implements Callable<Integer> {
 	@Option(names = { "-f", "--archive" }, description = "Input archive")
 	private File file;
 
-	@Option(names = { "--match" }, description = "Regex file name filter")
+	@Option(names = { "--grep" }, description = "Regex file name filter")
 	private Optional<String> match;
 
 	@Option(names = { "--rewrite" }, description = "Rewrite output path")
