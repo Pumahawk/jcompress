@@ -2,18 +2,31 @@ package com.github.pumahawk.jcompress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class JcompressApplicationTests {
 	
-	@Test
-	public void helpTest() {
-		simpleRun("--help");
+	public static Stream<Arguments> commandsHelpTests() {
+		return Stream.of(
+			arr("--help"),
+			arr("ls", "--help")
+		);
 	}
 	
-	@Test
-	public void lsRun() {
-		simpleRunAndTest("ls --help");
+	@ParameterizedTest
+	@MethodSource
+	public void commandsHelpTests(List<String> args) {
+		runAndTest(args.toArray(n -> new String[n]));
+	}
+	
+	public static Arguments arr(String... elements) {
+		return Arguments.of(Arrays.asList(elements));
 	}
 	
 	public int simpleRun(String args) {
