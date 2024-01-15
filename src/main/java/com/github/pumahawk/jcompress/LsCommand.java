@@ -51,7 +51,7 @@ public class LsCommand implements Callable<Integer> {
 			.takeWhile(v -> v.hasMoreElements())
 			.map(a -> a.nextElement())
 			.map(entry -> entry.getName())
-			.filter(name -> !match.isPresent() || name.matches(match.get()))
+			.filter(name -> match.map(rx -> name.matches(rx)).orElse(true))
 			.map(name -> rewrite.map(this::rexKey).map(rxc -> name.replaceAll(
 					rxc[0],
 					rxc[1])).orElse(name))
