@@ -69,6 +69,26 @@ public class LsCommandTests {
 	}
 
 	@Test
+	public void listTests_MultipleFileInput(@TempDir() File td) throws IOException, URISyntaxException, ArchiveException {
+		var archive1 = Path.of(td.getAbsolutePath(), "archive-1.zip");
+		var archive2 = Path.of(td.getAbsolutePath(), "archive-2.zip");
+		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive1);
+		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive2);
+		var out = new ByteArrayOutputStream();
+		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
+
+		new CommandLine(listArchiveAction).execute(archive1.toString(), archive2.toString());
+
+		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
+		assertEquals("message.txt", sc.nextLine());
+		assertEquals("message-2.txt", sc.nextLine());
+		assertEquals("message.txt", sc.nextLine());
+		assertEquals("message-2.txt", sc.nextLine());
+		assertFalse(sc.hasNext());
+		sc.close();
+	}
+
+	@Test
 	public void listTests_WithFilter(@TempDir() File td) throws IOException, URISyntaxException, ArchiveException {
 		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
 		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
