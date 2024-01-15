@@ -12,7 +12,6 @@ import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -30,6 +29,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
+
+import picocli.CommandLine;
 
 @ExtendWith(SpringExtension.class)
 @Import({
@@ -58,7 +59,7 @@ public class ListArchiveActionTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		listArchiveAction.list(archive.toFile(), Optional.empty(), Optional.empty(), Optional.empty());
+		new CommandLine(listArchiveAction).execute("-f", archive.toString());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -74,7 +75,10 @@ public class ListArchiveActionTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		listArchiveAction.list(archive.toFile(), Optional.empty(), Optional.of(".*2.*"), Optional.empty());
+		new CommandLine(listArchiveAction).execute(
+				"-f", archive.toString(),
+				"--match", ".*2.*"
+			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message-2.txt", sc.nextLine());
@@ -89,7 +93,10 @@ public class ListArchiveActionTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		listArchiveAction.list(archive.toFile(), Optional.empty(), Optional.empty(), Optional.of("2:1"));
+		new CommandLine(listArchiveAction).execute(
+				"-f", archive.toString(),
+				"--rewrite", "2:1"
+			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -105,7 +112,9 @@ public class ListArchiveActionTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		listArchiveAction.list(archive.toFile(), Optional.empty(), Optional.empty(), Optional.empty());
+		new CommandLine(listArchiveAction).execute(
+				"-f", archive.toString()
+			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -121,7 +130,12 @@ public class ListArchiveActionTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		listArchiveAction.list(archive.toFile(), Optional.of("stream"), Optional.empty(), Optional.empty());
+		new CommandLine(listArchiveAction).execute(
+				"-f", archive.toString(),
+				"--type", "stream"
+			);
+
+		//listArchiveAction.list(archive.toFile(), Optional.of("stream"), Optional.empty(), Optional.empty());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());

@@ -1,22 +1,40 @@
 package com.github.pumahawk.jcompress;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
 
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 @Component
-public class ListArchiveAction {
+@Command(name = "ls")
+public class ListArchiveAction implements Callable<Integer> {
+
+	@Option(names = { "-h", "--help" }, usageHelp = true, description = "display this help message")
+	boolean usageHelpRequested;
+
+	@Option(names = { "-f", "--archive" }, description = "Input archive")
+	private File file;
+
+	@Option(names = { "--match" }, description = "Regex file name filter")
+	private Optional<String> match;
+
+	@Option(names = { "--rewrite" }, description = "Rewrite output path")
+	private Optional<String> rewrite;
+
+	@Option(names = { "--type" }, description = "Archive type")
+	private Optional<String> type;
 	
 	@Autowired
 	private IOService ioService;
@@ -25,8 +43,9 @@ public class ListArchiveAction {
 	private List<ArchiveSolver> archiveSolvers;
 
 	@SuppressWarnings("resource")
-	public Integer list(File inputFile, Optional<String> type, Optional<String> match, Optional<String> rewrite) throws ArchiveException, IOException {
-		try (ArchiveFile ar = getArchive(type, inputFile)) {
+	@Override
+	public Integer call() throws Exception {
+		try (ArchiveFile ar = getArchive(type, file)) {
 			Enumeration<? extends ArchiveEntry> archive = ar.getEntries();
 			Stream.generate(() -> archive)
 			.takeWhile(v -> v.hasMoreElements())
@@ -58,4 +77,5 @@ public class ListArchiveAction {
 		};
 		return rex;
 	}
+
 }
