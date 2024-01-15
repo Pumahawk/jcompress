@@ -38,6 +38,9 @@ public class LsCommand implements Callable<Integer> {
 	@Option(names = { "--type" }, description = "Archive type")
 	private Optional<String> type;
 	
+	@Option(names = {"-l", "--file-name"}, description = "Show file name")
+	private boolean fileName;
+	
 	@Autowired
 	private IOService ioService;
 	
@@ -58,6 +61,7 @@ public class LsCommand implements Callable<Integer> {
 				.map(name -> rewrite.map(this::rexKey).map(rxc -> name.replaceAll(
 						rxc[0],
 						rxc[1])).orElse(name))
+				.map(name -> !fileName ? name : file.getPath() + ":" + name)
 				.forEach(ioService.getSystemOutputStream()::println);
 			}
 		}
