@@ -59,7 +59,7 @@ public class LsCommandTests {
 		var out = new ByteArrayOutputStream();
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
-		new CommandLine(listArchiveAction).execute("-f", archive.toString());
+		new CommandLine(listArchiveAction).execute(archive.toString());
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
 		assertEquals("message.txt", sc.nextLine());
@@ -76,8 +76,8 @@ public class LsCommandTests {
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
 		new CommandLine(listArchiveAction).execute(
-				"-f", archive.toString(),
-				"--grep", ".*2.*"
+				"--grep", ".*2.*",
+				archive.toString()
 			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
@@ -94,8 +94,8 @@ public class LsCommandTests {
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
 		new CommandLine(listArchiveAction).execute(
-				"-f", archive.toString(),
-				"--rewrite", "2:1"
+				"--rewrite", "2:1",
+				archive.toString()
 			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
@@ -113,7 +113,7 @@ public class LsCommandTests {
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
 		new CommandLine(listArchiveAction).execute(
-				"-f", archive.toString()
+				archive.toString()
 			);
 
 		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
@@ -131,8 +131,8 @@ public class LsCommandTests {
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
 		new CommandLine(listArchiveAction).execute(
-				"-f", archive.toString(),
-				"--type", "stream"
+				"--type", "stream",
+				archive.toString()
 			);
 
 		//listArchiveAction.list(archive.toFile(), Optional.of("stream"), Optional.empty(), Optional.empty());
