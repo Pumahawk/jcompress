@@ -34,19 +34,19 @@ import picocli.CommandLine;
 
 @ExtendWith(SpringExtension.class)
 @Import({
-	ListArchiveAction.class,
+	LsCommand.class,
 })
 @MockBean({
 	IOService.class,
 })
 @ComponentScan(basePackageClasses = ArchiveSolver.class)
-public class ListArchiveActionTests {
+public class LsCommandTests {
 	
 	@Autowired
 	private IOService ioService;
 	
 	@Autowired
-	private ListArchiveAction listArchiveAction;
+	private LsCommand listArchiveAction;
 	
 	@Test
 	public void loadContext() {

@@ -19,7 +19,7 @@ import picocli.CommandLine.Option;
 
 @Component
 @Command(name = "ls")
-public class ListArchiveAction implements Callable<Integer> {
+public class LsCommand implements Callable<Integer> {
 
 	@Option(names = { "-h", "--help" }, usageHelp = true, description = "display this help message")
 	boolean usageHelpRequested;
