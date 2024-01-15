@@ -121,7 +121,7 @@ public class LsCommandTests {
 		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
 
 		new CommandLine(listArchiveAction.get()).execute(
-				"--grep", ".*2.*",
+				"--grep", "-2",
 				archive.toString()
 			);
 

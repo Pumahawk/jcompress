@@ -6,6 +6,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -57,7 +59,7 @@ public class LsCommand implements Callable<Integer> {
 				.takeWhile(v -> v.hasMoreElements())
 				.map(a -> a.nextElement())
 				.map(entry -> entry.getName())
-				.filter(name -> match.map(rx -> name.matches(rx)).orElse(true))
+				.filter(name -> match.map(rx -> grepMatch(rx, name)).orElse(true))
 				.map(name -> rewrite.map(this::rexKey).map(rxc -> name.replaceAll(
 						rxc[0],
 						rxc[1])).orElse(name))
@@ -84,6 +86,10 @@ public class LsCommand implements Callable<Integer> {
 			rxc.replaceAll(".*[^\\\\]:", "").replaceAll("\\\\:", ":"),
 		};
 		return rex;
+	}
+	
+	public boolean grepMatch(String regex, String input) {
+		return Pattern.compile(regex).matcher(input).find();
 	}
 
 }
