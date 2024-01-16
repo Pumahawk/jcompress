@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
@@ -26,26 +27,51 @@ public class StreamSolver implements ArchiveSolver {
 	@Override
 	public ArchiveFile createArchiveFile(File file) throws ArchiveException, FileNotFoundException {
 		ArchiveInputStream<? extends ArchiveEntry> s = new ArchiveStreamFactory().createArchiveInputStream(new BufferedInputStream(new FileInputStream(file)));
-		var en = new Enumeration<ArchiveEntry>() {
-			
-			private ArchiveEntry next;
+		return new StreamArchiveFile(s);
+	}
+	
+	public class StreamArchiveFile implements ArchiveFile {
+		
+		private final ArchiveInputStream<? extends ArchiveEntry> ins;
+		
+		public StreamArchiveFile(ArchiveInputStream<? extends ArchiveEntry> ins) {
+			this.ins = ins;
+		}
+		
 
-			@Override
-			public boolean hasMoreElements() {
-				try {
-					next = s.getNextEntry();
-					return next != null;
-				} catch (IOException e) {
-					throw new RuntimeException();
+		@Override
+		public void close() throws IOException {
+			ins.close();
+		}
+
+		@Override
+		public Enumeration<? extends ArchiveEntry> getEntries() {
+			return new Enumeration<ArchiveEntry>() {
+				
+				private ArchiveEntry next;
+
+				@Override
+				public boolean hasMoreElements() {
+					try {
+						next = ins.getNextEntry();
+						return next != null;
+					} catch (IOException e) {
+						throw new RuntimeException();
+					}
 				}
-			}
 
-			@Override
-			public ArchiveEntry nextElement() {
-				return next;
-			}
-		};
-		return new ArchiveFile(() -> en, s);
+				@Override
+				public ArchiveEntry nextElement() {
+					return next;
+				}
+			};
+		}
+
+		@Override
+		public InputStream getInputStream(ArchiveEntry entry) {
+			return ins;
+		}
+		
 	}
 
 }

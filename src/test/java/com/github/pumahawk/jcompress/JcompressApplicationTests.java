@@ -15,7 +15,8 @@ class JcompressApplicationTests {
 	public static Stream<Arguments> commandsHelpTests() {
 		return Stream.of(
 			arr("--help"),
-			arr("ls", "--help")
+			arr("ls", "--help"),
+			arr("cat", "--help")
 		);
 	}
 	
