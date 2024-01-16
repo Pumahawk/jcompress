@@ -17,7 +17,7 @@ public class ZipSolver implements ArchiveSolver {
 
 	@Override
 	public boolean support(String type) {
-		return "zip".equals(type);
+		return "zip".equals(type) || "jar".equals(type);
 	}
 
 	@Override
