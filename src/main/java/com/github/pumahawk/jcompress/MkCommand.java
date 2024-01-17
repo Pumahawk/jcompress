@@ -2,7 +2,6 @@ package com.github.pumahawk.jcompress;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -59,7 +58,7 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 				) {
 			files
 				.stream()
-				.flatMap(f -> Stream.concat(Stream.of(f), Arrays.stream(f.listFiles())))
+				.flatMap(this::allFileRecursive)
 				.filter(el -> el != null)
 				.filter(f -> match.map(rx -> grepMatch(rx, f.getPath())).orElse(true))
 				.forEach(f -> {
@@ -73,6 +72,18 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 		}
 		
 		return 0;
+	}
+	
+	private Stream<File> allFileRecursive(File in) {
+		Stream<File> s = Stream.of(in);
+		for (File file : in.listFiles()) {
+			if (file.isDirectory()) {
+				s = Stream.concat(s, allFileRecursive(file));
+			} else {
+				s = Stream.concat(s, Stream.of(file));
+			}
+		}
+		return s;
 	}
 	
 }
