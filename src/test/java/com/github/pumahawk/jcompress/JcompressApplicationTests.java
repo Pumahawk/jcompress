@@ -17,7 +17,8 @@ class JcompressApplicationTests {
 			arr("--help"),
 			arr("ls", "--help"),
 			arr("cat", "--help"),
-			arr("ex", "--help")
+			arr("ex", "--help"),
+			arr("mk", "--help")
 		);
 	}
 	

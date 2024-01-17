@@ -11,5 +11,4 @@ public interface ArchiveFile extends Closeable {
 	public void close() throws IOException;
 	public Enumeration<? extends ArchiveEntry> getEntries();
 	public InputStream getInputStream(ArchiveEntry entry);
-
 }

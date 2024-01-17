@@ -8,9 +8,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.IOUtils;
@@ -84,6 +87,63 @@ public class ExCommandTests {
 			var outs = new ByteArrayOutputStream();
 			IOUtils.copy(zf.getInputStream(en), outs);
 			assertEquals("Message 2\n", outs.toString());
+			assertFalse(ens.hasMoreElements());
+		}
+	}
+	
+	@Test
+	public void extractionTest_ConversionZipToTar(@TempDir() File td) throws URISyntaxException, IOException {
+
+		var archive = Path.of(getClass().getResource("/archives/archive.tar").toURI()).toFile();
+		var out = Path.of(td.getAbsolutePath(), "out.tar").toFile();
+
+		Integer code = new CommandLine(action.get()).execute(
+				"--target", out.getAbsolutePath(),
+				"--output-type", "tar",
+				"--grep", "message.txt",
+				archive.getAbsolutePath());
+		assertEquals(0, code);
+		
+		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[1]);
+		assertEquals("out.tar", files[0]);
+		assertEquals(1, td.listFiles().length);
+		
+		try (TarFile tf = new TarFile(out)) {
+			var ens =  Collections.enumeration(tf.getEntries());
+			TarArchiveEntry en = ens.nextElement();
+			var outs = new ByteArrayOutputStream();
+			IOUtils.copy(tf.getInputStream(en), outs);
+			assertEquals("message.txt", en.getName());
+			assertEquals("Hello World!\n", outs.toString());
+			assertFalse(ens.hasMoreElements());
+		}
+	}
+	
+	@Test
+	public void extractionTest_ConversionZipToTarWithRewrite(@TempDir() File td) throws URISyntaxException, IOException {
+
+		var archive = Path.of(getClass().getResource("/archives/archive.tar").toURI()).toFile();
+		var out = Path.of(td.getAbsolutePath(), "out.tar").toFile();
+
+		Integer code = new CommandLine(action.get()).execute(
+				"--target", out.getAbsolutePath(),
+				"--output-type", "tar",
+				"--grep", "message.txt",
+				"--rewrite", "^:dir/",
+				archive.getAbsolutePath());
+		assertEquals(0, code);
+		
+		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[1]);
+		assertEquals("out.tar", files[0]);
+		assertEquals(1, td.listFiles().length);
+		
+		try (TarFile tf = new TarFile(out)) {
+			var ens =  Collections.enumeration(tf.getEntries());
+			TarArchiveEntry en = ens.nextElement();
+			var outs = new ByteArrayOutputStream();
+			IOUtils.copy(tf.getInputStream(en), outs);
+			assertEquals("dir/message.txt", en.getName());
+			assertEquals("Hello World!\n", outs.toString());
 			assertFalse(ens.hasMoreElements());
 		}
 	}

@@ -4,12 +4,13 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.attribute.FileTime;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,14 +19,14 @@ import com.github.pumahawk.jcompress.ArchiveFile;
 import com.github.pumahawk.jcompress.IOService;
 
 @Component
-public class SupportOutputSolverFactory implements OutputSolverFactory {
+public class TarOutputSolverFactory implements OutputSolverFactory {
 
 	@Autowired
 	private IOService ioService;
 
 	@Override
 	public boolean support(String type) {
-		return false;
+		return "tar".equals(type);
 	}
 
 	
@@ -33,23 +34,23 @@ public class SupportOutputSolverFactory implements OutputSolverFactory {
 	public OutputSolver solve(String type, File output) {
 		try {
 			var outf = ioService.getFileOutputStream(output);
-			ArchiveOutputStream<ArchiveEntry> out = new ArchiveStreamFactory().createArchiveOutputStream(type, outf);
-			return new SupportOutputSolver(outf, out);
+			TarArchiveOutputStream out = new ArchiveStreamFactory().createArchiveOutputStream("tar", outf);
+			return new TarOutputSolver(outf, out);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public class SupportOutputSolver implements OutputSolver {
+	public class TarOutputSolver implements OutputSolver {
 
 		private final OutputStream outf;
-		private final ArchiveOutputStream<ArchiveEntry> out;
+		private final TarArchiveOutputStream out;
 
-		public SupportOutputSolver(OutputStream outf, ArchiveOutputStream<ArchiveEntry> out) {
+		public TarOutputSolver(OutputStream outf, TarArchiveOutputStream out) {
 			this.outf = outf;
 			this.out = out;
 		}
-		
+
 		@Override
 		public void close() throws IOException {
 			if (outf != null) {
@@ -61,54 +62,49 @@ public class SupportOutputSolverFactory implements OutputSolverFactory {
 
 		@Override
 		public void writeEntry(ArchiveFile ar, ExtractionEntry exentry) {
-			// Unable to use edit entry
 			ArchiveEntry entry = exentry.getEntry();
 			try {
-				out.putArchiveEntry(entry);
+				TarArchiveEntry en = new TarArchiveEntry(exentry.getName());
+				en.setSize(entry.getSize());
+				en.setLastModifiedTime(FileTime.from(entry.getLastModifiedDate().toInstant()));
+				out.putArchiveEntry(en);
 				IOUtils.copy(ar.getInputStream(entry), out);
 				out.closeArchiveEntry();
 			} catch (IOException e) {
 				throw new RuntimeException("Unable to write on new file", e);
 			}
 		}
+		
+		@Override
+		public ArchiveEntry createEntry(String name) {
+			return new TarArchiveEntry(name);
+		}
+		
+		@Override
+		public ArchiveEntry createEntry(File file) {
+			return new TarArchiveEntry(file);
+		}
 
 		@Override
 		public void writeEntry(File file, ExtractionEntry exentry) {
-			// Unable to use edit entry
-			ArchiveEntry entry = exentry.getEntry();
+			
 			if (file.isDirectory()) {
-				try  {
-					out.putArchiveEntry(entry);
+				TarArchiveEntry en = new TarArchiveEntry(file, exentry.getName());
+				try {
+					out.putArchiveEntry(en);
 					out.closeArchiveEntry();
 				} catch (IOException e) {
-					throw new RuntimeException("Unable to write on new file", e);
+					throw new RuntimeException(e);
 				}
 			} else {
-				try (InputStream in = new BufferedInputStream(new FileInputStream(file))) {
-					out.putArchiveEntry(entry);
+				try (var in = new BufferedInputStream(new FileInputStream(file))) {
+					TarArchiveEntry en = new TarArchiveEntry(file, exentry.getName());
+					out.putArchiveEntry(en);
 					IOUtils.copy(in, out);
 					out.closeArchiveEntry();
 				} catch (IOException e) {
 					throw new RuntimeException("Unable to write on new file", e);
 				}
-			}
-		}
-		
-		@Override
-		public ArchiveEntry createEntry(String name) {
-			try {
-				return out.createArchiveEntry(new File(name), name);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		
-		@Override
-		public ArchiveEntry createEntry(File file) {
-			try {
-				return out.createArchiveEntry(file, file.getPath());
-			} catch (IOException e) {
-				throw new RuntimeException(e);
 			}
 		}
 	}

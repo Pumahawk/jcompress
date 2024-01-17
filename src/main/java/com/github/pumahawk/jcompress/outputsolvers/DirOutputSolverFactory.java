@@ -37,11 +37,30 @@ public class DirOutputSolverFactory implements OutputSolverFactory {
 		@Override
 		public void close() throws IOException {
 		}
+		
+		@Override
+		public ArchiveEntry createEntry(String name) {
+			// TODO Auto-generated method stub
+			throw new RuntimeException("Unsupported");
+		}
+		
+		@Override
+		public ArchiveEntry createEntry(File file) {
+			// TODO Auto-generated method stub
+			throw new RuntimeException("Unsupported");
+		}
+		
+		@Override
+		public void writeEntry(File file, ExtractionEntry exentry) {
+			// TODO Auto-generated method stub
+			throw new RuntimeException("Unsupported");
+		}
 
 		@Override
-		public void writeEntry(ArchiveFile ar, ArchiveEntry entry) {
+		public void writeEntry(ArchiveFile ar, ExtractionEntry exentry) {
+			ArchiveEntry entry = exentry.getEntry();
 			if (output.exists() && output.isDirectory()) {
-				File f = Path.of(output.getAbsolutePath(), entry.getName()).toFile();
+				File f = Path.of(output.getAbsolutePath(), exentry.getName()).toFile();
 				if (!f.getParentFile().exists()) {
 					if (!f.getParentFile().mkdirs()) {
 						throw new RuntimeException("Unable to create parent folder " + f.getParent());
@@ -64,7 +83,7 @@ public class DirOutputSolverFactory implements OutputSolverFactory {
 				throw new RuntimeException("invalid output directory " + output.getAbsolutePath());
 			}
 		}
-		
+
 	}
 
 }
