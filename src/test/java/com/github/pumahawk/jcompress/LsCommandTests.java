@@ -2,11 +2,13 @@ package com.github.pumahawk.jcompress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
@@ -17,6 +19,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.ArchiveException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,6 +60,12 @@ public class LsCommandTests {
 	public void loadContext() {
 	}
 
+	@BeforeEach
+	public void mockIoService() throws FileNotFoundException {
+		when(ioService.getFileInputStream(any())).thenCallRealMethod();
+		when(ioService.getFileOutputStream(any())).thenCallRealMethod();
+	}
+	
 	@Test
 	public void listTests(@TempDir() File td) throws IOException, URISyntaxException, ArchiveException {
 		var archive = Path.of(td.getAbsolutePath(), "archive.zip");

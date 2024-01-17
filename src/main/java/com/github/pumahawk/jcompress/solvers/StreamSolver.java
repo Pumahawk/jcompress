@@ -2,7 +2,6 @@ package com.github.pumahawk.jcompress.solvers;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,12 +11,17 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.pumahawk.jcompress.ArchiveFile;
+import com.github.pumahawk.jcompress.IOService;
 
 @Component
 public class StreamSolver implements ArchiveSolver {
+	
+	@Autowired
+	private IOService ioService;
 
 	@Override
 	public boolean support(String type) {
@@ -26,7 +30,7 @@ public class StreamSolver implements ArchiveSolver {
 
 	@Override
 	public ArchiveFile createArchiveFile(File file) throws ArchiveException, FileNotFoundException {
-		ArchiveInputStream<? extends ArchiveEntry> s = new ArchiveStreamFactory().createArchiveInputStream(new BufferedInputStream(new FileInputStream(file)));
+		ArchiveInputStream<? extends ArchiveEntry> s = new ArchiveStreamFactory().createArchiveInputStream(new BufferedInputStream(ioService.getFileInputStream(file)));
 		return new StreamArchiveFile(s);
 	}
 	

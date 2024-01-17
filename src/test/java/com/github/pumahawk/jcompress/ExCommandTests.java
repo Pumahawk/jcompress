@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -35,14 +34,8 @@ import picocli.CommandLine;
 
 @ExtendWith(SpringExtension.class)
 @Import(ExCommandTests.Conf.class)
-@MockBean({
-	IOService.class,
-})
 @ComponentScan(basePackageClasses = {ArchiveSolver.class, OutputSolver.class})
 public class ExCommandTests {
-	
-	@Autowired
-	private IOService ioService;
 	
 	@Autowired
 	private ApplicationContext ac;
@@ -96,6 +89,9 @@ public class ExCommandTests {
 	}
 
 	@Configuration
+	@Import({
+		IOService.class,
+	})
 	public static class Conf {
 		@Bean
 		@Scope("prototype")

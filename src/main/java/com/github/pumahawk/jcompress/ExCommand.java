@@ -44,9 +44,6 @@ public class ExCommand  extends BasicCommand implements Callable<Integer> {
 	private File output;
 	
 	@Autowired
-	private IOService ioService;
-	
-	@Autowired
 	private List<OutputSolverFactory> outputs;
 
 	@SuppressWarnings("resource")
