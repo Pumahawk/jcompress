@@ -74,16 +74,10 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 		return 0;
 	}
 	
+
 	private Stream<File> allFileRecursive(File in) {
-		Stream<File> s = Stream.of(in);
-		for (File file : in.listFiles()) {
-			if (file.isDirectory()) {
-				s = Stream.concat(s, allFileRecursive(file));
-			} else {
-				s = Stream.concat(s, Stream.of(file));
-			}
-		}
-		return s;
+		return Stream.concat(Stream.of(in), 
+				in.isFile() ? Stream.empty() : Stream.of(in.listFiles()).flatMap(f -> allFileRecursive(f)));
 	}
 	
 }
