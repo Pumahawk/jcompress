@@ -2,25 +2,12 @@ package com.github.pumahawk.jcompress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Scanner;
-import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -30,59 +17,43 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
 
-import picocli.CommandLine;
-
 @ExtendWith(SpringExtension.class)
 @Import(CatCommandTests.Conf.class)
-@MockBean({
-	IOService.class,
-})
 @ComponentScan(basePackageClasses = ArchiveSolver.class)
-public class CatCommandTests {
+public class CatCommandTests extends CommandBaseTest<CatCommand> {
 	
-	@Autowired
-	private IOService ioService;
-	
-	@Autowired
-	private ApplicationContext ac;
-	
-	private Supplier<CatCommand> catCommand = () -> ac.getBean(CatCommand.class);
-
 	@Test
 	public void loadContext() {
 	}
 	
-	@Test
-	public void catContentZipTest(@TempDir() File td) throws IOException, URISyntaxException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
-		var out = new ByteArrayOutputStream();
-		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
-
-		new CommandLine(catCommand.get()).execute(archive.toString());
-
-		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
-		assertEquals("Hello World!", sc.nextLine());
-		assertEquals("Message 2", sc.nextLine());
-		assertFalse(sc.hasNext());
-		sc.close();
+	@Override
+	public Class<CatCommand> commandType() {
+		return CatCommand.class;
 	}
 	
 	@Test
-	public void catContentZipTest_WithGrep(@TempDir() File td) throws IOException, URISyntaxException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
-		var out = new ByteArrayOutputStream();
-		when(ioService.getSystemOutputStream()).thenReturn(new PrintStream(out));
+	public void catContentZipTest() throws IOException, URISyntaxException {
+		var archive = getFile("archives/archive.zip");
 
-		new CommandLine(catCommand.get()).execute(
+		run(archive.toString());
+
+		var out = getStdoutLines().iterator();
+		assertEquals("Hello World!", out.next());
+		assertEquals("Message 2", out.next());
+		assertFalse(out.hasNext());
+	}
+	
+	@Test
+	public void catContentZipTest_WithGrep() throws IOException, URISyntaxException {
+		var archive = getFile("archives/archive.zip");
+
+		run(
 				"--grep", "-2",
 				archive.toString());
 
-		Scanner sc = new Scanner(new ByteArrayInputStream(out.toByteArray()));
-		assertEquals("Message 2", sc.nextLine());
-		assertFalse(sc.hasNext());
-		sc.close();
+		var out = getStdoutLines().iterator();
+		assertEquals("Message 2", out.next());
+		assertFalse(out.hasNext());
 	}
 	
 	@Configuration

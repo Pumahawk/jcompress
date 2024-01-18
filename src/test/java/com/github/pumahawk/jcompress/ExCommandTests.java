@@ -7,22 +7,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.compress.utils.IOUtils;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -33,53 +23,47 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.github.pumahawk.jcompress.outputsolvers.OutputSolver;
 import com.github.pumahawk.jcompress.solvers.ArchiveSolver;
 
-import picocli.CommandLine;
-
 @ExtendWith(SpringExtension.class)
 @Import(ExCommandTests.Conf.class)
 @ComponentScan(basePackageClasses = {ArchiveSolver.class, OutputSolver.class})
-public class ExCommandTests {
+public class ExCommandTests extends CommandBaseTest<ExCommand> {
 	
-	@Autowired
-	private ApplicationContext ac;
-	
-	private Supplier<ExCommand> action = () -> ac.getBean(ExCommand.class);
+	@Override
+	public Class<ExCommand> commandType() {
+		return ExCommand.class;
+	}
 	
 	@Test
 	public void loadContext() {
 	}
 	
 	@Test
-	public void extractionTest(@TempDir() File td) throws URISyntaxException {
+	public void extractionTest() throws URISyntaxException {
 
-		var archive = Path.of(getClass().getResource("/archives/archive.zip").toURI()).toFile();
+		var td = mkdir("dir");
+		var archive = getFile("archives/archive.zip");
 
-		new CommandLine(action.get()).execute(
-				"--output-directory", td.getAbsolutePath(),
+		run(
+				"--output-directory",  td.getAbsolutePath(),
 				archive.getAbsolutePath());
 
-		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[2]);
-		assertEquals("message-2.txt", files[0]);
-		assertEquals("message.txt", files[1]);
-		assertEquals(2, files.length);
+		var files = lsr(td).map(File::getName).sorted().toList();
+		assertEquals("message-2.txt", files.get(0));
+		assertEquals("message.txt", files.get(1));
+		assertEquals(2, files.size());
 	}
 	
 	@Test
-	public void extractionTest_ZipOut(@TempDir() File td) throws URISyntaxException, IOException {
+	public void extractionTest_ZipOut() throws URISyntaxException, IOException {
 
-		var archive = Path.of(getClass().getResource("/archives/archive.zip").toURI()).toFile();
-		var out = Path.of(td.getAbsolutePath(), "out.zip").toFile();
+		var archive = getFile("archives/archive.zip");
+		var out = getFile("dir/out.zip");
 
-		Integer code = new CommandLine(action.get()).execute(
+		run(
 				"--target", out.getAbsolutePath(),
 				"--output-type", "zip",
 				"--grep", "message-2",
 				archive.getAbsolutePath());
-		assertEquals(0, code);
-		
-		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[1]);
-		assertEquals("out.zip", files[0]);
-		assertEquals(1, td.listFiles().length);
 		
 		try (ZipFile zf = new ZipFile(out)) {
 			var ens =  zf.getEntries();
@@ -92,66 +76,60 @@ public class ExCommandTests {
 	}
 	
 	@Test
-	public void extractionTest_ConversionZipToTar(@TempDir() File td) throws URISyntaxException, IOException {
+	public void extractionTest_ConversionZipToTar() throws URISyntaxException, IOException {
 
-		var archive = Path.of(getClass().getResource("/archives/archive.tar").toURI()).toFile();
-		var out = Path.of(td.getAbsolutePath(), "out.tar").toFile();
+		var td = mkdir("dir");
+		var archive = getFile("archives/archive.tar");
+		var out = getFile("dir/out.tar");
 
-		Integer code = new CommandLine(action.get()).execute(
+		run(
 				"--target", out.getAbsolutePath(),
 				"--output-type", "tar",
 				"--grep", "message.txt",
 				archive.getAbsolutePath());
-		assertEquals(0, code);
 		
-		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[1]);
-		assertEquals("out.tar", files[0]);
-		assertEquals(1, td.listFiles().length);
+		var files = lsr(td).map(File::getName).sorted().toList();
+		assertEquals(1, files.size());
+		assertEquals("out.tar", files.get(0));
 		
-		try (TarFile tf = new TarFile(out)) {
-			var ens =  Collections.enumeration(tf.getEntries());
-			TarArchiveEntry en = ens.nextElement();
-			var outs = new ByteArrayOutputStream();
-			IOUtils.copy(tf.getInputStream(en), outs);
-			assertEquals("message.txt", en.getName());
-			assertEquals("Hello World!\n", outs.toString());
-			assertFalse(ens.hasMoreElements());
+		try (var ar = readArchive(out)) {
+			var it = ar.iterator();
+
+			var en = it.next();
+			assertEquals("message.txt", en.getEntry().getName());
+			assertEquals("Hello World!\n", ar.contentAsString());
+			assertFalse(it.hasNext());
 		}
 	}
 	
 	@Test
-	public void extractionTest_ConversionZipToTarWithRewrite(@TempDir() File td) throws URISyntaxException, IOException {
+	public void extractionTest_ConversionZipToTarWithRewrite() throws URISyntaxException, IOException {
 
-		var archive = Path.of(getClass().getResource("/archives/archive.tar").toURI()).toFile();
-		var out = Path.of(td.getAbsolutePath(), "out.tar").toFile();
+		var td = mkdir("dir");
+		var archive = getFile("archives/archive.tar");
+		var out = getFile("dir/out.tar");
 
-		Integer code = new CommandLine(action.get()).execute(
+		run(
 				"--target", out.getAbsolutePath(),
 				"--output-type", "tar",
 				"--grep", "message.txt",
 				"--rewrite", "^:dir/",
 				archive.getAbsolutePath());
-		assertEquals(0, code);
 		
-		var files = Arrays.asList(td.listFiles()).stream().map(f -> (File)f).map(File::getName).sorted().collect(Collectors.toList()).toArray(new String[1]);
-		assertEquals("out.tar", files[0]);
-		assertEquals(1, td.listFiles().length);
+		var files = lsr(td).map(File::getName).sorted().toList();
+		assertEquals(1, files.size());
+		assertEquals("out.tar", files.get(0));
 		
-		try (TarFile tf = new TarFile(out)) {
-			var ens =  Collections.enumeration(tf.getEntries());
-			TarArchiveEntry en = ens.nextElement();
-			var outs = new ByteArrayOutputStream();
-			IOUtils.copy(tf.getInputStream(en), outs);
-			assertEquals("dir/message.txt", en.getName());
-			assertEquals("Hello World!\n", outs.toString());
-			assertFalse(ens.hasMoreElements());
+		try (var ar = readArchive(out)) {
+			var it = ar.iterator();
+			assertEquals("dir/message.txt", it.next().getEntry().getName());
+			assertEquals("Hello World!\n", ar.contentAsString());
+			assertFalse(it.hasNext());
 		}
+		
 	}
 
 	@Configuration
-	@Import({
-		IOService.class,
-	})
 	public static class Conf {
 		@Bean
 		@Scope("prototype")
