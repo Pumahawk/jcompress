@@ -104,15 +104,8 @@ public abstract class CommandBaseTest<T> {
 	}
 
 	private Stream<File> allFileRecursive(File in) {
-		if (in.isFile()) {
-			return Stream.of(in);
-		} else {
-			Stream<File> s = Stream.of(in);
-			for (File file : in.listFiles()) {
-				s = Stream.concat(s, allFileRecursive(file));
-			}
-			return s;
-		}
+		return Stream.concat(Stream.of(in), 
+				in.isFile() ? Stream.empty() : Stream.of(in.listFiles()).flatMap(f -> allFileRecursive(f)));
 	}
 	
 	public Archive readArchive(String file) {
