@@ -7,6 +7,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -81,6 +83,32 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 			assertEquals(unixAbsolutePath(td).substring(3) + "/message-1", it.next().getName());
 			assertEquals("Message 1", zf.contentAsString());
 			assertEquals(unixAbsolutePath(td).substring(3) + "/message-2", it.next().getName());
+			assertEquals("Message 2", zf.contentAsString());
+		}
+		
+	}
+	
+	@Test
+	@EnabledOnOs({OS.WINDOWS})
+	public void creationTest_7zOuput() throws URISyntaxException, IOException {
+
+		var td = mkdir("input");
+		var out = mkdir("output");
+
+		FSUtils.createFile(td, "message-1", "Message 1");
+		FSUtils.createFile(td, "message-2", "Message 2");
+		
+		run(
+			"--target", Path.of(out.getAbsolutePath(), "out").toString(),
+			"-o", "cpio",
+			td.getAbsolutePath());
+		
+		try (var zf = readArchive("output/out")) {
+			var it = zf.iterator();
+			assertEquals(td + "", it.next().getName());
+			assertEquals(td + "\\message-1", it.next().getName());
+			assertEquals("Message 1", zf.contentAsString());
+			assertEquals(td + "\\message-2", it.next().getName());
 			assertEquals("Message 2", zf.contentAsString());
 		}
 		
