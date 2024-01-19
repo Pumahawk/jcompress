@@ -52,8 +52,8 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_MultipleFileInput() throws IOException, URISyntaxException, ArchiveException {
-		var archive1 = Path.of(td.getAbsolutePath(), "archive-1.zip");
-		var archive2 = Path.of(td.getAbsolutePath(), "archive-2.zip");
+		var archive1 = Path.of(td.getAbsolutePath(), "/archives/archive-1.zip");
+		var archive2 = Path.of(td.getAbsolutePath(), "/archives/archive-2.zip");
 		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive1);
 		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive2);
 
@@ -69,10 +69,9 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_MultipleFileInputWithFileName() throws IOException, URISyntaxException, ArchiveException {
-		var archive1 = Path.of(td.getAbsolutePath(), "archive-1.zip");
-		var archive2 = Path.of(td.getAbsolutePath(), "archive-2.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive1);
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive2);
+
+		var archive1 = copyFile("archives/archive.zip", "out/archive-1.zip");
+		var archive2 = copyFile("archives/archive.zip", "out/archive-2.zip");
 
 		run("--file-name", archive1.toString(), archive2.toString());
 
@@ -86,8 +85,7 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_WithFilter() throws IOException, URISyntaxException, ArchiveException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
+		var archive = getFile("archives/archive.zip");
 
 		run(
 				"--grep", "-2",
@@ -101,8 +99,7 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_WithReplace() throws IOException, URISyntaxException, ArchiveException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
+		var archive = getFile("archives/archive.zip");
 
 		run(
 				"--rewrite", "2:1",
@@ -117,8 +114,7 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_TarArchive() throws IOException, URISyntaxException, ArchiveException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.tar");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.tar").toURI()), archive);
+		var archive = getFile("archives/archive.tar");
 
 		run(
 				archive.toString()
@@ -132,8 +128,7 @@ public class LsCommandTests extends CommandBaseTest<LsCommand> {
 
 	@Test
 	public void listTests_StreamarArchive() throws IOException, URISyntaxException, ArchiveException {
-		var archive = Path.of(td.getAbsolutePath(), "archive.zip");
-		Files.copy(Path.of(getClass().getResource("/archives/archive.zip").toURI()), archive);
+		var archive = getFile("archives/archive.zip");
 
 		run(
 				"--type", "stream",

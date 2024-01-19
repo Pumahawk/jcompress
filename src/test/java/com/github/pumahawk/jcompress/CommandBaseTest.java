@@ -30,6 +30,7 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -88,6 +89,18 @@ public abstract class CommandBaseTest<T> {
 		var f = Path.of(td.getAbsolutePath(), path).toFile();
 		f.getParentFile().mkdirs();
 		return f;
+	}
+	
+	public File copyFile(String source, String destination) {
+		var f1 = getFile(source);
+		var f2 = getFile(destination);
+		try {
+			FileUtils.copyFile(f1, f2);
+			return f2;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		
 	}
 	
 	public Integer run(String... args) {
