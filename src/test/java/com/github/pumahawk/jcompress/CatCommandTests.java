@@ -44,6 +44,22 @@ public class CatCommandTests extends CommandBaseTest<CatCommand> {
 	}
 	
 	@Test
+	public void catContentZipTest_WithDirectory() throws IOException, URISyntaxException {
+		var archive = createArchive(ArchiveType.ZIP, ar -> ar
+				.put("dir1/message-1.txt", "M1\n")
+				.put("dir1/message-2.txt", "M2\n") 
+				.put("dir2/message-4.txt", "M3"));
+
+		run(archive.toString());
+
+		var out = getStdoutLines().iterator();
+		assertEquals("M1", out.next());
+		assertEquals("M2", out.next());
+		assertEquals("M3", out.next());
+		assertFalse(out.hasNext());
+	}
+	
+	@Test
 	public void catContentZipTest_WithGrep() throws IOException, URISyntaxException {
 		var archive = getFile("archives/archive.zip");
 
