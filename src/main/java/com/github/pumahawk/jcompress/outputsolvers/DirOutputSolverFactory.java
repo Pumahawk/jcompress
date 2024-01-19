@@ -59,18 +59,14 @@ public class DirOutputSolverFactory implements OutputSolverFactory {
 		@Override
 		public void writeEntry(ArchiveFile ar, ExtractionEntry exentry) {
 			ArchiveEntry entry = exentry.getEntry();
-			if (output.exists() && output.isDirectory()) {
+			if (output.isDirectory()) {
 				File f = Path.of(output.getAbsolutePath(), exentry.getName()).toFile();
 				if (!f.getParentFile().exists()) {
-					if (!f.getParentFile().mkdirs()) {
-						throw new RuntimeException("Unable to create parent folder " + f.getParent());
-					}
+					f.getParentFile().mkdirs();
 				}
 				if (entry.isDirectory()) {
 					if (!f.exists()) {
-						if (!f.mkdir()) {
-							throw new RuntimeException("Unable to create folder from entry " + f.getAbsolutePath());
-						}
+						f.mkdir();
 					}
 				} else {
 					try (FileOutputStream fout = new FileOutputStream(f)) {

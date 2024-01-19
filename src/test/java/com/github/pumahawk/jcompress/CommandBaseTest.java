@@ -18,6 +18,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -103,10 +104,14 @@ public abstract class CommandBaseTest<T> {
 		
 	}
 	
-	public Integer run(String... args) {
-		var code = new CommandLine(command.get()).execute(args);
-		assertEquals(0, code);
-		return code;
+	public Integer run(int code, String... args) {
+		var c = new CommandLine(command.get()).execute(args);
+		assertEquals(code, c);
+		return c;
+	}
+	
+	public Integer run(String... args ) {
+		return run(0, args);
 	}
 	
 	public File mkdir(String path) {
@@ -191,18 +196,24 @@ public abstract class CommandBaseTest<T> {
 			this.outs = outs;
 		}
 
+		public ArchiveOUT put(String name) {
+			return put(name, null);
+		}
+		
 		public ArchiveOUT put(String name, String content) {
-			byte[] body = content.getBytes();
+			Optional<byte[]> body = Optional.ofNullable(content).map(String::getBytes);
 			ArchiveEntry entry = switch(out.getClass().getName()) {
 				case "org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream" -> new ZipArchiveEntry(name) {{
-					setSize(body.length);
+					body.map(b -> b.length).ifPresent(this::setSize);
 				}};
 				case "org.apache.commons.compress.archivers.tar.TarArchiveOutputStream" -> new TarArchiveEntry(name);
 				default -> throw new RuntimeException("Unsupported type");
 			};
 			try {
 				out.putArchiveEntry(entry);
-				out.write(body);
+				if (body.isPresent()) {
+					out.write(body.get());
+				}
 				out.closeArchiveEntry();
 			} catch (IOException e) {
 				throw new RuntimeException(e);

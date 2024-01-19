@@ -126,7 +126,10 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 	public void extractionTest_ArchiveWithMultipleDirectory() throws IOException {
 		File archive = createArchive(ArchiveType.ZIP, ar -> ar
 				.put("NomeFile-0.txt", "Content 0")
-				.put("dir/NomeFile-1.txt", "Content 1"));
+				.put("dir/")
+				.put("dir/NomeFile-1.txt", "Content 1")
+				.put("dir/dir2/dir3/")
+				.put("dir/"));
 		var out = mkdir("out");
 		
 		run(
@@ -138,8 +141,27 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 		var it = allFileRecursive(out).map(File::getPath).iterator();
 		assertEquals("", min(out, it.next()));
 		assertEquals("\\dir", min(out, it.next()));
+		assertEquals("\\dir\\dir2", min(out, it.next()));
+		assertEquals("\\dir\\dir2\\dir3", min(out, it.next()));
 		assertEquals("\\dir\\NomeFile-1.txt", min(out, it.next()));
 		assertEquals("\\NomeFile-0.txt", min(out, it.next()));
+	}
+	
+	@Test
+	public void extractionTest_IsADirectory() throws IOException {
+		File archive = createArchive(ArchiveType.ZIP, ar -> ar
+				.put("NomeFile-0.txt", "Content 0")
+				.put("dir/")
+				.put("dir/NomeFile-1.txt", "Content 1")
+				.put("dir/dir2/dir3/")
+				.put("dir/"));
+		var out = FSUtils.createFile(td, "out", "Fake dir");
+		
+		run(1,
+				"--target", out.getAbsolutePath(),
+				archive.getAbsolutePath()
+		);
+		
 	}
 	
 	public String min(File root, String path) {
