@@ -2,17 +2,10 @@ package com.github.pumahawk.jcompress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Collections;
 
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarFile;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
-import org.apache.commons.compress.utils.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.context.annotation.Bean;
@@ -48,21 +41,22 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 		
 		FSUtils.createFile(td, "message-1", "Message 1");
 		FSUtils.createFile(td, "message-2", "Message 2");
+		FSUtils.createFile(td, "dir/message-3", "Message 3");
 		
 		run(
 			"--target", Path.of(out.getAbsolutePath(), "out.zip").toString(),
 			"-o", "zip",
 			td.getAbsolutePath());
 		
-		try (var zf = new ZipFile(Path.of(out.getAbsolutePath(), "out.zip").toFile())) {
-			var es = zf.getEntries();
-			ZipArchiveEntry entry = es.nextElement();
-			assertEquals(td.getAbsolutePath() + "/", entry.getName());
-			entry = es.nextElement();
-			assertEquals(td.getAbsolutePath().replace('\\', '/') + "/message-1", entry.getName());
-			var content = new ByteArrayOutputStream();
-			IOUtils.copy(zf.getInputStream(entry), content);
-			assertEquals("Message 1", content.toString());
+		try (var ar = readArchive(getFile("output/out.zip"))) {
+			var it = ar.iterator();
+			assertEquals(unixAbsolutePath(td) + "/", it.next().getName());
+			assertEquals(unixAbsolutePath(td) + "/dir/", it.next().getName());
+			assertEquals(unixAbsolutePath(td) + "/dir/message-3", it.next().getName());
+			assertEquals(unixAbsolutePath(td) + "/message-1", it.next().getName());
+			assertEquals("Message 1", ar.contentAsString());
+			assertEquals(unixAbsolutePath(td) + "/message-2", it.next().getName());
+			assertEquals("Message 2", ar.contentAsString());
 		}
 		
 	}
@@ -81,15 +75,13 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 			"-o", "tar",
 			td.getAbsolutePath());
 		
-		try (var zf = new TarFile(Path.of(out.getAbsolutePath(), "out.tar").toFile())) {
-			var es = Collections.enumeration(zf.getEntries());
-			TarArchiveEntry entry = es.nextElement();
-			assertEquals(td.getAbsolutePath().replace('\\', '/').substring(3) + "/", entry.getName());
-			entry = es.nextElement();
-			assertEquals(td.getAbsolutePath().replace('\\', '/').substring(3) + "/message-1", entry.getName());
-			var content = new ByteArrayOutputStream();
-			IOUtils.copy(zf.getInputStream(entry), content);
-			assertEquals("Message 1", content.toString());
+		try (var zf = readArchive("output/out.tar")) {
+			var it = zf.iterator();
+			assertEquals(unixAbsolutePath(td).substring(3) + "/", it.next().getName());
+			assertEquals(unixAbsolutePath(td).substring(3) + "/message-1", it.next().getName());
+			assertEquals("Message 1", zf.contentAsString());
+			assertEquals(unixAbsolutePath(td).substring(3) + "/message-2", it.next().getName());
+			assertEquals("Message 2", zf.contentAsString());
 		}
 		
 	}

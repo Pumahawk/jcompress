@@ -13,25 +13,29 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Scanner;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.ApplicationContext;
-
-import com.github.pumahawk.jcompress.CommandBaseTest.Archive.Entry;
 
 import picocli.CommandLine;
 
@@ -103,17 +107,17 @@ public abstract class CommandBaseTest<T> {
 		return ls(root).flatMap(this::allFileRecursive);
 	}
 
-	private Stream<File> allFileRecursive(File in) {
+	public Stream<File> allFileRecursive(File in) {
 		return Stream.concat(Stream.of(in), 
 				in.isFile() ? Stream.empty() : Stream.of(in.listFiles()).flatMap(f -> allFileRecursive(f)));
 	}
 	
-	public Archive readArchive(String file) {
+	public ArchiveIN readArchive(String file) {
 		return readArchive(getFile(file));
 	}
 	
-	public Archive readArchive(File file) {
-		return new Archive(file);
+	public ArchiveIN readArchive(File file) {
+		return new ArchiveIN(file);
 	}
 	
 	public ByteArrayOutputStream getStdOut() {
@@ -125,13 +129,87 @@ public abstract class CommandBaseTest<T> {
 		Scanner scanner = new Scanner(new ByteArrayInputStream(getStdOut().toByteArray()));
 		return Stream.generate(() -> scanner).takeWhile(sc -> sc.hasNextLine()).map(sc -> sc.nextLine());
 	}
+
+	public File createArchive(ArchiveType type, Consumer<ArchiveOUT> farchive) {
+		File file = Stream.iterate(0, n -> n+1).map(n -> getFile("tmp-archive-" + n + "." + type.getType())).filter(f-> !f.exists()).findAny().get();
+		try {
+			var sout = new FileOutputStream(file);
+			ArchiveOutputStream<ArchiveEntry> sa = new ArchiveStreamFactory().createArchiveOutputStream(type.getType(), new FileOutputStream(file));
+			try (var arout = new ArchiveOUT(sa, sout)) {
+				farchive.accept(arout);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return file;
+	}
 	
-	public static class Archive implements Closeable, Iterable<Entry> {
+	public String unixAbsolutePath(File f) {
+		return FilenameUtils.separatorsToUnix(f.getAbsolutePath()).replace("^C:/", "");
+	}
+	
+	public String unixPath(File f) {
+		return FilenameUtils.separatorsToUnix(f.getPath()).replace("^C:/", "");
+	}
+	
+	public enum ArchiveType {
+		ZIP("zip"),
+		TAR("tar"),
+		;
+		
+		private final String type;
+		
+		private ArchiveType(String type) {
+			this.type = type;
+		}
+		
+		public String getType() {
+			return type;
+		}
+	}
+	
+	public static class ArchiveOUT implements Closeable {
+		
+		final private ArchiveOutputStream<ArchiveEntry> out;
+		final private OutputStream outs;
+		
+		public ArchiveOUT(ArchiveOutputStream<ArchiveEntry> out, OutputStream outs) {
+			this.out = out;
+			this.outs = outs;
+		}
+
+		public ArchiveOUT put(String name, String content) {
+			byte[] body = content.getBytes();
+			ArchiveEntry entry = switch(out.getClass().getName()) {
+				case "org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream" -> new ZipArchiveEntry(name) {{
+					setSize(body.length);
+				}};
+				case "org.apache.commons.compress.archivers.tar.TarArchiveOutputStream" -> new TarArchiveEntry(name);
+				default -> throw new RuntimeException("Unsupported type");
+			};
+			try {
+				out.putArchiveEntry(entry);
+				out.write(body);
+				out.closeArchiveEntry();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		@Override
+		public void close() throws IOException {
+			out.close();
+			outs.close();
+		}
+	}
+	
+	public static class ArchiveIN implements Closeable, Iterable<ArchiveEntry> {
 		
 		private final InputStream in;
 		private final ArchiveInputStream<ArchiveEntry> stream;
 		
-		public Archive(File archive) {
+		public ArchiveIN(File archive) {
 			try {
 				this.in = new BufferedInputStream(new FileInputStream(archive));
 				this.stream = new ArchiveStreamFactory().createArchiveInputStream(in);
@@ -156,33 +234,21 @@ public abstract class CommandBaseTest<T> {
 			return new String(content());
 		}
 		
-		public static class Entry {
-			private final ArchiveEntry entry;
-			
-			public Entry(ArchiveEntry entry) {
-				this.entry = entry;
-			}
-			
-			public ArchiveEntry getEntry() {
-				return entry;
-			}
-		}
-
 		@Override
-		public Iterator<Entry> iterator() {
-			return new Iterator<Entry>() {
+		public Iterator<ArchiveEntry> iterator() {
+			return new Iterator<ArchiveEntry>() {
 
 				private boolean hasPark = false;
-				private Entry park;
+				private ArchiveEntry park;
 
 				@Override
-				public Entry next() {
+				public ArchiveEntry next() {
 					if (hasPark) {
 						hasPark = false;
 						return park;
 					} else {
 						try {
-							return new Entry(stream.getNextEntry());
+							return stream.getNextEntry();
 						} catch (IOException e) {
 							throw new RuntimeException(e);
 						}
@@ -196,7 +262,7 @@ public abstract class CommandBaseTest<T> {
 					} else {
 						hasPark = true;
 						try {
-							park =  new Entry(stream.getNextEntry());
+							park =  stream.getNextEntry();
 						} catch (IOException e) {
 							throw new RuntimeException(e);
 						}

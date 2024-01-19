@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -63,6 +64,7 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 				.filter(f -> match.map(rx -> grepMatch(rx, f.getPath())).orElse(true))
 				.forEach(f -> {
 					var entry = new ExtractionEntry(os.createEntry(f));
+					entry.setName(FilenameUtils.separatorsToUnix(entry.getName()));
 					rewrite.map(this::rexKey).map(rxc -> entry.getName().replaceAll(
 							rxc[0],
 							rxc[1])).ifPresent(entry::setName);

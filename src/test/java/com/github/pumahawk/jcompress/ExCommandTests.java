@@ -65,13 +65,10 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 				"--grep", "message-2",
 				archive.getAbsolutePath());
 		
-		try (ZipFile zf = new ZipFile(out)) {
-			var ens =  zf.getEntries();
-			ZipArchiveEntry en = ens.nextElement();
-			var outs = new ByteArrayOutputStream();
-			IOUtils.copy(zf.getInputStream(en), outs);
-			assertEquals("Message 2\n", outs.toString());
-			assertFalse(ens.hasMoreElements());
+		try (var zf = readArchive(out)) {
+			var it = zf.iterator();
+			assertEquals("message-2.txt", it.next().getName());
+			assertEquals("Message 2\n", zf.contentAsString());
 		}
 	}
 	
@@ -96,7 +93,7 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 			var it = ar.iterator();
 
 			var en = it.next();
-			assertEquals("message.txt", en.getEntry().getName());
+			assertEquals("message.txt", en.getName());
 			assertEquals("Hello World!\n", ar.contentAsString());
 			assertFalse(it.hasNext());
 		}
@@ -122,11 +119,35 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 		
 		try (var ar = readArchive(out)) {
 			var it = ar.iterator();
-			assertEquals("dir/message.txt", it.next().getEntry().getName());
+			assertEquals("dir/message.txt", it.next().getName());
 			assertEquals("Hello World!\n", ar.contentAsString());
 			assertFalse(it.hasNext());
 		}
 		
+	}
+	
+	@Test
+	public void extractionTest_ArchiveWithMultipleDirectory() throws IOException {
+		File archive = createArchive(ArchiveType.ZIP, ar -> ar
+				.put("NomeFile-0.txt", "Content 0")
+				.put("dir/NomeFile-1.txt", "Content 1"));
+		var out = mkdir("out");
+		
+		run(
+				"--target", out.getAbsolutePath(),
+				archive.getAbsolutePath()
+		);
+		
+		
+		var it = allFileRecursive(out).map(File::getPath).iterator();
+		assertEquals("", min(out, it.next()));
+		assertEquals("\\dir", min(out, it.next()));
+		assertEquals("\\dir\\NomeFile-1.txt", min(out, it.next()));
+		assertEquals("\\NomeFile-0.txt", min(out, it.next()));
+	}
+	
+	public String min(File root, String path) {
+		return path.substring(root.getPath().length());
 	}
 
 	@Configuration
