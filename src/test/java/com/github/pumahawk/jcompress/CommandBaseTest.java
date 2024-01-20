@@ -28,6 +28,7 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.cpio.CpioArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.utils.IOUtils;
@@ -173,6 +174,7 @@ public abstract class CommandBaseTest<T> {
 	public enum ArchiveType {
 		ZIP("zip"),
 		TAR("tar"),
+		CPIO("cpio"),
 		;
 		
 		private final String type;
@@ -207,6 +209,9 @@ public abstract class CommandBaseTest<T> {
 					body.map(b -> b.length).ifPresent(this::setSize);
 				}};
 				case "org.apache.commons.compress.archivers.tar.TarArchiveOutputStream" -> new TarArchiveEntry(name);
+				case "org.apache.commons.compress.archivers.cpio.CpioArchiveOutputStream" -> new CpioArchiveEntry(name) {{
+					body.map(b -> b.length).ifPresent(this::setSize);
+				}};
 				default -> throw new RuntimeException("Unsupported type");
 			};
 			try {

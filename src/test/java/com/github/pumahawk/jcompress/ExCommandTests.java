@@ -164,6 +164,24 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 		
 	}
 	
+	@Test
+	public void useDefaultOutput() throws IOException {
+		var archive = createArchive(ArchiveType.CPIO, ar -> ar.put("first", "Message..."));
+		var out = getFile("out/file.cpio");
+		
+		run(
+				"--target", out.getAbsolutePath(),
+				"--type", "stream",
+				"--out-type", "cpio",
+				archive.getAbsolutePath()
+		);
+		
+		try(var ar = readArchive(out)) {
+			var it = ar.iterator();
+			assertEquals("first", it.next().getName());
+		}
+	}
+	
 	public String min(File root, String path) {
 		return path.substring(root.getPath().length());
 	}
