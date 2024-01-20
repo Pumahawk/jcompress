@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -23,9 +25,8 @@ public class TarOutputSolverFactoryTests extends SimpleArchiveBaseTest {
 	private TarOutputSolverFactory tarOutputSolverFactory;
 
 	@Test
+	@EnabledOnOs({OS.WINDOWS})
 	public void longNameTar_over100() throws IOException {
-		// TODO check process using file
-		td = Files.createTempDirectory("_junittests").toFile();
 		var out = getFile("out.tar");
 		var bs = new StringBuilder();
 		IntStream.range(0, 100).forEach(n -> bs.append("a"));

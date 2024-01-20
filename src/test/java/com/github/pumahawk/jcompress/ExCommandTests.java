@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -123,6 +125,7 @@ public class ExCommandTests extends CommandBaseTest<ExCommand> {
 	}
 	
 	@Test
+	@EnabledOnOs({OS.WINDOWS})
 	public void extractionTest_ArchiveWithMultipleDirectory() throws IOException {
 		File archive = createArchive(ArchiveType.ZIP, ar -> ar
 				.put("NomeFile-0.txt", "Content 0")

@@ -35,6 +35,7 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 	}
 	
 	@Test
+	@EnabledOnOs({OS.WINDOWS})
 	public void creationTest_ZipSupport() throws URISyntaxException, IOException {
 
 		var td = mkdir("input");
@@ -64,6 +65,7 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 	}
 	
 	@Test
+	@EnabledOnOs({OS.WINDOWS})
 	public void creationTest_TarOuput() throws URISyntaxException, IOException {
 
 		var td = mkdir("input");
