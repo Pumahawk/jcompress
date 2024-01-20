@@ -31,10 +31,11 @@ public class TarOutputSolverFactory implements OutputSolverFactory {
 
 	
 	 @Override
-	public OutputSolver solve(String type, File output) {
+	public TarOutputSolver solve(String type, File output) {
 		try {
 			var outf = ioService.getFileOutputStream(output);
 			TarArchiveOutputStream out = new ArchiveStreamFactory().createArchiveOutputStream("tar", outf);
+			out.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
 			return new TarOutputSolver(outf, out);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -81,7 +82,7 @@ public class TarOutputSolverFactory implements OutputSolverFactory {
 		}
 		
 		@Override
-		public ArchiveEntry createEntry(File file) {
+		public TarArchiveEntry createEntry(File file) {
 			return new TarArchiveEntry(file);
 		}
 
@@ -89,6 +90,7 @@ public class TarOutputSolverFactory implements OutputSolverFactory {
 		public void writeEntry(File file, ExtractionEntry exentry) {
 			
 			if (file.isDirectory()) {
+				
 				TarArchiveEntry en = new TarArchiveEntry(file, exentry.getName());
 				try {
 					out.putArchiveEntry(en);
