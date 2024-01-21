@@ -33,7 +33,7 @@ public class ExCommand  extends BasicCommand implements Callable<Integer> {
 	@Option(names = { "--grep" }, description = "Regex file name filter")
 	private Optional<String> match;
 
-	@Option(names = { "--rewrite" }, description = "Rewrite output path")
+	@Option(names = { "--rewrite", "--rw" }, description = "Rewrite output path")
 	private Optional<String> rewrite;
 
 	@Option(names = { "--type" }, description = "Archive type")

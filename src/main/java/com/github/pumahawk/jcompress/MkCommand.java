@@ -42,7 +42,7 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 	@Option(names = { "--grep" }, description = "Regex file name filter")
 	private Optional<String> match;
 
-	@Option(names = { "--rewrite" }, description = "Rewrite output path")
+	@Option(names = { "--rewrite", "--rw" }, description = "Rewrite output path")
 	private Optional<String> rewrite;
 
 	@Option(names = { "--output-type", "--ot", "--out-type", "-o" }, description = "Output type", defaultValue = "dir")
