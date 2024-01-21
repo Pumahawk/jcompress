@@ -7,8 +7,12 @@ public class ExtractionEntry {
 	private final ArchiveEntry entry;
 	
 	public ExtractionEntry(ArchiveEntry entry) {
+		this(entry.getName(), entry);
+	}
+	
+	public ExtractionEntry(String name, ArchiveEntry entry) {
 		this.entry = entry;
-		this.name = entry.getName();
+		this.name = name;
 	}
 	
 	public void setName(String name) {

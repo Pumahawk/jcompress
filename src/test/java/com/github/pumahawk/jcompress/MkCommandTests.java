@@ -35,6 +35,35 @@ public class MkCommandTests extends CommandBaseTest<MkCommand> {
 	}
 	
 	@Test
+	public void creationTest_NoAbsolute() throws URISyntaxException, IOException {
+
+		var td = mkdir("input");
+		var out = mkdir("output");
+
+		
+		FSUtils.createFile(td, "message-1", "Message 1");
+		FSUtils.createFile(td, "message-2", "Message 2");
+		FSUtils.createFile(td, "dir/message-3", "Message 3");
+		
+		run(
+			"--target", Path.of(out.getAbsolutePath(), "out.zip").toString(),
+			"--no-absolute",
+			"-o", "zip",
+			td.getAbsolutePath());
+		
+		try (var ar = readArchive(getFile("output/out.zip"))) {
+			var it = ar.iterator();
+			assertEquals("dir/", it.next().getName());
+			assertEquals("dir/message-3", it.next().getName());
+			assertEquals("message-1", it.next().getName());
+			assertEquals("Message 1", ar.contentAsString());
+			assertEquals("message-2", it.next().getName());
+			assertEquals("Message 2", ar.contentAsString());
+		}
+		
+	}
+	
+	@Test
 	@EnabledOnOs({OS.WINDOWS})
 	public void creationTest_ZipSupport() throws URISyntaxException, IOException {
 
