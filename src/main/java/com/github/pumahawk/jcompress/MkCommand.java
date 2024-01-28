@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.github.pumahawk.jcompress.outputsolvers.ExtractionEntry;
+import com.github.pumahawk.jcompress.outputsolvers.OutputSolver;
 import com.github.pumahawk.jcompress.outputsolvers.OutputSolverFactory;
 import com.github.pumahawk.jcompress.outputsolvers.SupportOutputSolverFactory;
 
@@ -75,10 +76,10 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 				.flatMap(fo -> this.allFileRecursive(fo.key())
 						.map(f -> new Tuple<>(fo.key(), f)))
 				.filter(f -> match.map(rx -> grepMatch(rx, f.value().getPath())).orElse(true))
-				.map(f -> new Tuple<>(f.value(), new ExtractionEntry(noAbsolute ? f.value().getPath().substring(f.key().getPath().length()) : f.value().getPath(), os.createEntry(f.value()))))
+				.map(f -> new Tuple<>(f.value(), createExtractionEntry(os, f.key(), f.value())))
 				.peek(f -> f.value().setName(FilenameUtils.separatorsToUnix(f.value().getName())))
-				.filter(f -> !f.value().getName().equals(""))
 				.peek(f -> f.value().setName(f.value().getName().replaceFirst("^/", "")))
+				.filter(f -> !f.value().getName().equals(""))
 				.peek(f -> rewrite.map(this::rexKey).map(rxc -> f.value().getName().replaceAll(
 						rxc[0],
 						rxc[1])).ifPresent(name -> f.value().setName(name)))
@@ -93,6 +94,10 @@ public class MkCommand  extends BasicCommand implements Callable<Integer> {
 	private Stream<File> allFileRecursive(File in) {
 		return Stream.concat(Stream.of(in), 
 				in.isFile() ? Stream.empty() : Stream.of(in.listFiles()).flatMap(f -> allFileRecursive(f)));
+	}
+	
+	private ExtractionEntry createExtractionEntry(OutputSolver os, File origin, File file) {
+		return new ExtractionEntry(noAbsolute ? file.getPath().substring(origin.getPath().length()) : file.getPath(), os.createEntry(file));
 	}
 	
 }
